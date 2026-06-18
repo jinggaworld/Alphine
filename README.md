@@ -30,10 +30,12 @@
 - [Quick Start](#quick-start)
 - [Tech Stack](#tech-stack)
 - [API Reference](#api-reference)
+- [Deployment](#deployment)
 - [Useful Scripts](#useful-scripts)
 - [Demo Video](#demo-video)
-- [Deployment](#deployment)
 - [License](#license)
+
+---
 
 ---
 
@@ -392,6 +394,88 @@ Watch the 3-minute walkthrough:
 | **📱 Mobile Responsive** | Full responsive design with compact NetworkSwitcher and adaptive layouts |
 | **🔐 Real Signing** | Freighter `signTransaction()` — real mainnet/testnet signing |
 | **✅ TypeScript** | Full TypeScript frontend with strict mode — zero errors |
+
+---
+
+## Deployment
+
+### Architecture
+
+```
+┌─────────────────────┐     ┌──────────────────────┐
+│   Vercel (Frontend) │────▶│  Railway (Backend)   │
+│   React + Vite SPA  │     │  Node.js + Express   │
+│   https://alphine…   │     │  https://alphine-api…│
+│   .vercel.app       │     │  .railway.app        │
+└─────────────────────┘     └──────────────────────┘
+```
+
+### Prerequisites
+
+- [Vercel](https://vercel.com) account (GitHub login)
+- [Railway](https://railway.app) account (GitHub login)
+- GitHub repository push access
+
+### Step 1: Deploy Backend to Railway
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/jinggaworld/Alphine)
+
+Or manually:
+
+```bash
+# 1. Push code to GitHub first
+# 2. Go to https://railway.app → New Project → Deploy from GitHub
+# 3. Select your Alphine repository
+# 4. Set Root Directory to 'backend' (or it auto-detects Dockerfile)
+# 5. Add Environment Variables:
+```
+
+| Variable | Value | Source |
+|----------|-------|--------|
+| `GROQ_API_KEY` | `gsk_your_key` | [Groq Console](https://console.groq.com) |
+| `TAVILY_API_KEY` | `tvly_your_key` | [Tavily Dashboard](https://app.tavily.com) |
+| `PORT` | `3001` | Railway auto-sets this |
+
+```bash
+# 6. Railway auto-detects Node.js from package.json
+# 7. Get your Railway URL: https://alphine-backend.up.railway.app
+```
+
+### Step 2: Deploy Frontend to Vercel
+
+[![Deploy on Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jinggaworld/Alphine)
+
+Or manually:
+
+```bash
+# 1. Install Vercel CLI
+npm install -g vercel
+
+# 2. Deploy from frontend directory
+cd frontend
+vercel --prod
+
+# 3. Set environment variable in Vercel dashboard:
+#    VITE_API_URL = https://alphine-backend.up.railway.app
+```
+
+### Step 3: Verify
+
+```bash
+# Backend health
+curl https://alphine-backend.up.railway.app/api/health
+
+# Frontend
+open https://alphine-ui.vercel.app
+```
+
+### Files for Deployment
+
+| File | Purpose |
+|------|---------|
+| `frontend/vercel.json` | Vite SPA routing for Vercel |
+| `backend/Dockerfile` | Container build for Railway |
+| `backend/railway.json` | Railway deploy configuration |
 
 ---
 
