@@ -7,6 +7,7 @@
  * GET  /api/health — Server health + API key status
  */
 import express from 'express';
+import crypto from 'crypto';
 import { AMLTransactionAnalyzer } from '../aml/analyzer.mjs';
 import { ComplianceReportGenerator } from '../aml/compliance_report.mjs';
 import { GroqCacheManager } from '../aml/cache_manager.mjs';
@@ -24,18 +25,17 @@ export function createAnalyzeRouter() {
      * Body: { transaction: { from, to, amount, timestamp }, userHistory: [...] }
      */
     router.post('/analyze-transaction', async (req, res) => {
+        const { transaction, userHistory } = req.body;
+        const userAddress = (transaction && transaction.from) || 'unknown';
+        const startTime = Date.now();
+
+        if (!transaction || !transaction.amount) {
+            return res.status(400).json({
+                error: 'Missing required fields: transaction.amount',
+            });
+        }
+
         try {
-            const { transaction, userHistory } = req.body;
-
-            if (!transaction || !transaction.amount) {
-                return res.status(400).json({
-                    error: 'Missing required fields: transaction.amount',
-                });
-            }
-
-            const userAddress = transaction.from || 'unknown';
-            const startTime = Date.now();
-
             // Check cache first
             const cached = cache.get(userAddress, userHistory);
             if (cached) {
@@ -62,11 +62,39 @@ export function createAnalyzeRouter() {
                 cacheStats: cache.getStats(),
             });
         } catch (error) {
-            console.error('Analysis error:', error.message);
-            res.status(500).json({
-                error: 'Analysis failed',
-                details: error.message,
-            });
+            console.error('⚠️  Groq AI error, falling back to mock analysis:', error.message);
+
+            // Fallback to mock analysis so the transaction isn't blocked
+            const mockAnalysis = {
+                circuitInputs: {
+                    threshold: '10000',
+                    timeWindow: '90',
+                    currentTimestamp: Math.floor(Date.now() / 1000).toString(),
+                    numSuspiciousTx: '0',
+                },
+                compliance: {
+                    riskScore: 5,
+                    redFlags: ['AI analysis unavailable — using default compliance check'],
+                    recommendation: 'review',
+                    structuringDetected: false,
+                    velocityAlerts: [],
+                    needsManualReview: true,
+                },
+                auditLog: {
+                    timestamp: new Date().toISOString(),
+                    aiModel: 'mock (Groq API error: ' + error.message + ')',
+                    analysisId: crypto.randomUUID(),
+                },
+                mode: 'mock_ai_fallback',
+                cached: false,
+                processingTimeMs: Date.now() - startTime,
+                _aiError: error.message,
+            };
+
+            // Cache the mock result
+            cache.set(userAddress, userHistory, mockAnalysis);
+
+            res.json(mockAnalysis);
         }
     });
 

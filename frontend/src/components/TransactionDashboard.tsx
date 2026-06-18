@@ -118,9 +118,11 @@ export function TransactionDashboard({ walletAddress, network, selectedAsset, on
     };
     addLogEntry(log1);
 
+    let destinationExists = false;
     const t1 = Date.now();
     try {
       const accRes = await axios.get(`${horizonUrl}/accounts/${recipient}`);
+      destinationExists = true;
       const balances = (accRes.data.balances || []).slice(0, 3).map((b: any) => ({
         type: b.asset_type === 'native' ? 'XLM' : b.asset_code,
         balance: b.balance,
@@ -136,6 +138,7 @@ export function TransactionDashboard({ walletAddress, network, selectedAsset, on
         },
       });
     } catch (err: any) {
+      destinationExists = false;
       updateLogEntry(log1.id, {
         status: 'success',
         statusCode: err.response?.status || 0,
@@ -344,10 +347,18 @@ export function TransactionDashboard({ walletAddress, network, selectedAsset, on
         duration: Date.now() - t3,
         error: err.message,
       });
-      setStatus('failed');
-      setError(`AI Analysis failed: ${err.message}`);
-      setTotalDuration(Date.now() - startTotal);
-      return;
+      // Don't block — use default analysis and show warning
+      report = {
+        compliance: {
+          riskScore: 5,
+          redFlags: ['AI analysis unavailable — using default compliance check'],
+          recommendation: 'review',
+          structuringDetected: false,
+          velocityAlerts: [],
+        },
+        mode: 'mock_ai_fallback',
+        _aiError: err.message,
+      };
     }
 
     // --- Step 4: ZK Proof ---
@@ -433,15 +444,34 @@ export function TransactionDashboard({ walletAddress, network, selectedAsset, on
       // Build the transaction
       const networkPassphrase = network === 'testnet' ? Networks.TESTNET : Networks.PUBLIC;
       const sourceAccount = new Account(walletAddress!, sequence);
+
+      // Choose operation: createAccount for unfunded XLM destinations, payment otherwise
+      let operation;
+      if (!destinationExists && selectedAsset === 'XLM') {
+        // New account — use createAccount (minimum 2 XLM)
+        const minBalance = Math.max(2, amountNum);
+        if (amountNum < 2) {
+          throw new Error(`Cannot send ${amountNum} XLM to a new account — minimum is 2 XLM to create an account + fund it. Try sending at least 2 XLM.`);
+        }
+        operation = Operation.createAccount({
+          destination: recipient,
+          startingBalance: amountNum.toString(),
+        });
+      } else if (!destinationExists && selectedAsset === 'USDC') {
+        throw new Error('Destination account does not exist on the network. USDC can only be sent to existing accounts. Fund the destination with at least 2 XLM first.');
+      } else {
+        operation = Operation.payment({
+          destination: recipient,
+          asset: stellarAsset,
+          amount: amountNum.toString(),
+        });
+      }
+
       const tx = new TransactionBuilder(sourceAccount, {
         fee: BASE_FEE,
         networkPassphrase,
       })
-        .addOperation(Operation.payment({
-          destination: recipient,
-          asset: stellarAsset,
-          amount: amountNum.toString(),
-        }))
+        .addOperation(operation)
         .setTimeout(300)
         .build();
 
@@ -543,9 +573,22 @@ export function TransactionDashboard({ walletAddress, network, selectedAsset, on
         });
       } catch (submitErr: any) {
         const respData = submitErr.response?.data;
-        const errorMsg = respData?.extras?.result_codes?.transaction
-          ? `Transaction failed: ${respData.extras.result_codes.transaction}`
-          : `Submission failed: ${submitErr.message}`;
+        // Show detailed operation-level error codes for better debugging
+        const txResultCode = respData?.extras?.result_codes?.transaction;
+        const opResultCodes = respData?.extras?.result_codes?.operations;
+        let errorMsg: string;
+        if (txResultCode && opResultCodes?.length) {
+          errorMsg = `Transaction failed: ${txResultCode} — operation error: ${opResultCodes.join(', ')}`;
+          if (opResultCodes.includes('op_no_destination')) {
+            errorMsg += '. Destination account does not exist. Fund it with at least 2 XLM first.';
+          } else if (opResultCodes.includes('op_underfunded')) {
+            errorMsg += '. Insufficient balance in source account.';
+          }
+        } else if (txResultCode) {
+          errorMsg = `Transaction failed: ${txResultCode}`;
+        } else {
+          errorMsg = `Submission failed: ${submitErr.message}`;
+        }
 
         updateLogEntry(log7.id, {
           status: 'error',

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a73e8"/>
+      <stop offset="100%" style="stop-color:#8ab4f8"/>
+    </linearGradient>
+    <linearGradient id="mt" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#e8f0fe"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: Mountain peak with shield -->
+  <g transform="translate(20, 10)">
+    <!-- Shield background -->
+    <rect x="0" y="10" width="80" height="90" rx="16" fill="url(#bg)"/>
+
+    <!-- Mountain peak -->
+    <polygon points="40,20 18,70 62,70" fill="url(#mt)" opacity="0.95"/>
+    <!-- Snow cap -->
+    <polygon points="40,20 32,35 48,35" fill="white"/>
+    <!-- Left slope shadow -->
+    <polygon points="40,20 18,70 28,70 40,35" fill="white" opacity="0.3"/>
+
+    <!-- ZK badge -->
+    <rect x="22" y="58" width="36" height="14" rx="7" fill="#1557b0"/>
+    <text x="40" y="69" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="white" text-anchor="middle">ZK</text>
+  </g>
+
+  <!-- Text: Alphine -->
+  <text x="120" y="55" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="800" fill="#1a73e8" letter-spacing="-1">
+    Alphine
+  </text>
+
+  <!-- Tagline -->
+  <text x="120" y="78" font-family="Inter, Arial, sans-serif" font-size="13" fill="#5f6368" letter-spacing="0.3">
+    ZK-Powered AML Compliance for Stellar
+  </text>
+
+  <!-- Decorative line -->
+  <line x1="120" y1="88" x2="370" y2="88" stroke="#e8eaed" stroke-width="1"/>
+
+  <!-- Tech badges -->
+  <text x="120" y="105" font-family="Arial, sans-serif" font-size="9" fill="#9aa0a6">
+    Stellar Soroban · Groq AI · Tavily Oracle · Noir ZK
+  </text>
+</svg>

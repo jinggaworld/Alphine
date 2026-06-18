@@ -1,4 +1,6 @@
-# 🏔️ Alphine — Zero-Knowledge AML Compliance Layer for Stellar
+<div align="center">
+  <img src="docs/logo/alphine-logo.svg" alt="Alphine Logo" width="500" />
+  <br/><br/>
 
 [![Stellar](https://img.shields.io/badge/Stellar-Testnet/Mainnet-00B4E6)](https://stellar.org)
 [![Noir](https://img.shields.io/badge/Noir-Circuits-FF6B6B)](https://noir-lang.org)
@@ -6,6 +8,11 @@
 [![Tavily](https://img.shields.io/badge/Tavily-Oracle-FF6B35)](https://tavily.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 [![Hackathon](https://img.shields.io/badge/DoraHacks-Stellar_Hacks_Real_World_ZK-8A2BE2)](https://dorahacks.io/hackathon/stellar-hacks-zk/detail)
+</div>
+
+---
+
+# Alphine — Zero-Knowledge AML Compliance Layer for Stellar
 
 ---
 
