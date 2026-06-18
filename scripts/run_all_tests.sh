@@ -37,9 +37,7 @@ echo "🎨 3/4 — Frontend TypeScript Check"
 echo "------------------------------------------"
 cd "$PROJECT_ROOT/frontend"
 npx tsc --noEmit 2>&1 || { echo "❌ TypeScript errors!"; exit 1; }
-echo "✅ TypeScript clean"
-
-# 4. Frontend Build
+echo "✅ TypeScript clean"# 4. Frontend Build
 echo ""
 echo "🏗️  4/4 — Frontend Production Build"
 echo "------------------------------------------"
@@ -47,7 +45,19 @@ cd "$PROJECT_ROOT/frontend"
 npx vite build 2>&1 | tail -5
 echo "✅ Frontend build successful"
 
+# 5. Backend Integration Tests (optional - requires running server)
+echo ""
+echo "🧪 5/5 — Backend Integration Tests"
+echo "------------------------------------------"
+cd "$PROJECT_ROOT"
+if command -v node &> /dev/null && [ -d "backend/node_modules" ]; then
+  echo "ℹ️  To run integration tests: node --test tests/integration/full_pipeline.test.mjs"
+  echo "   (Requires backend server running on port 3001)"
+else
+  echo "⚠️  Backend dependencies not installed. Run: cd backend && npm install"
+fi
+
 echo ""
 echo "=========================================="
-echo "  ✅  All tests passed!"
+  echo "  ✅  All tests passed!"
 echo "=========================================="

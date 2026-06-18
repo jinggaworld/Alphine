@@ -136,8 +136,14 @@ Regulators get cryptographic proof. Users keep their data private. Both sides wi
 ```bash
 git clone https://github.com/jinggaworld/Alphine
 cd Alphine
+
+# Copy and configure environment variables
 cp .env.example .env
-# Add your GROQ_API_KEY and TAVILY_API_KEY
+# Required: fill in GROQ_API_KEY (Groq AI) and TAVILY_API_KEY (Tavily Search)
+# Optional: generate Stellar keys with `stellar keys generate alice --network testnet`
+
+# Frontend env (for local development)
+cp frontend/.env.example frontend/.env
 ```
 
 ### 2. Backend
@@ -316,7 +322,7 @@ alphine/
 | **Groth16 Verifier** | 5 | ✅ All pass (4-pair equation) |
 | **ZK Primitives** | 5 | ✅ All pass |
 | **Alphine Payment** | 7 | ✅ All pass (7/7) |
-| **Total Rust** | **24** | ✅ **100% pass** |
+| **Total Rust** | **22** | ✅ **100% pass** |
 | **Noir Circuit** | `nargo compile` | ✅ Zero errors |
 | **Frontend TypeScript** | `tsc --noEmit` | ✅ Zero errors |
 | **Frontend Build** | `vite build` | ✅ 328 KB gzipped |
