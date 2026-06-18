@@ -365,6 +365,19 @@ alphine/
 
 ---
 
+## Demo Video
+
+[![Alphine Demo](https://img.youtube.com/vi/4LRgE77yqEc/maxresdefault.jpg)](https://youtu.be/4LRgE77yqEc)
+
+Watch the 3-minute walkthrough:
+- Connect Freighter wallet
+- Send XLM on testnet with full compliance pipeline
+- Sanctions check — blocked with AI reasoning
+- ETH address sanctions check
+- Transaction Log in detail
+
+---
+
 ## Features
 
 | Feature | Description |
