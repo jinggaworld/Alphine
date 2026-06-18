@@ -1,0 +1,10 @@
+merkle_root = "0x1234"
+nullifier = "0x5678"
+threshold = 10000
+current_timestamp = 1718600000
+user_address = "0xabcd"
+merkle_proof = ["0x1111", "0x2222", "0x3333"]
+merkle_indices = [false, false, false]
+amount = 5000
+historical_amounts = [0, 0, 0, 0, 0]
+historical_timestamps = [0, 0, 0, 0, 0]
