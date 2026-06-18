@@ -10,6 +10,8 @@ interface ComplianceData {
   merkleRoot?: string;
   sanctioned?: boolean;
   processingTimeMs?: number;
+  reasoning?: string;
+  sanctionsMode?: string;
 }
 
 interface ComplianceReportProps {
@@ -97,6 +99,19 @@ export function ComplianceReport({ data }: ComplianceReportProps) {
 
       <RiskMeter score={data.riskScore} />
 
+      {/* AI Reasoning from Groq */}
+      {data.reasoning && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-google-gray uppercase tracking-wider flex items-center gap-1.5">
+            <FileText className="w-3 h-3" />
+            Groq AI Analysis
+          </h4>
+          <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
+            <p className="text-xs text-google-dark leading-relaxed whitespace-pre-line">{data.reasoning}</p>
+          </div>
+        </div>
+      )}
+
       {/* Red Flags */}
       {data.redFlags.length > 0 && (
         <div className="space-y-2">
@@ -152,13 +167,28 @@ export function ComplianceReport({ data }: ComplianceReportProps) {
         </div>
       )}
 
-      {/* Processing Time */}
-      {data.processingTimeMs !== undefined && (
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <span className="text-xs text-google-gray">Processing Time</span>
-          <span className="text-xs font-mono text-google-dark">{data.processingTimeMs}ms</span>
+      {/* Sanctions Mode & Processing Time */}
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-2">
+          {data.sanctionsMode && (
+            <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${
+              data.sanctionsMode === 'real'
+                ? 'bg-green-50 text-green-600 border-green-200'
+                : 'bg-yellow-50 text-yellow-600 border-yellow-200'
+            }`}>
+              {data.sanctionsMode === 'real' ? 'REAL' : 'MOCK'}
+            </span>
+          )}
+          {data.merkleRoot && data.merkleRoot !== 'N/A' && (
+            <span className="text-[10px] text-google-gray font-mono" title={data.merkleRoot}>
+              Root: {data.merkleRoot.slice(0, 12)}...
+            </span>
+          )}
         </div>
-      )}
+        {data.processingTimeMs !== undefined && (
+          <span className="text-xs font-mono text-google-dark">{data.processingTimeMs}ms</span>
+        )}
+      </div>
     </motion.div>
   );
 }

@@ -19,7 +19,8 @@ import { createAnalyzeRouter } from './api/analyze.mjs';
 import { createSanctionsRouter } from './api/sanctions.mjs';
 import { createProofRouter } from './api/proof.mjs';
 
-dotenv.config();
+// Load .env from project root (parent of backend/)
+dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '.env') });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

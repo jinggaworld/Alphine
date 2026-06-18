@@ -115,15 +115,25 @@ Output JSON: { "structuring_detected": bool, "confidence": 0-100, "suspicious_cl
     }
 
     _buildAnalysisPrompt(transaction, userHistory) {
-        return `Analyze this Stellar USDC transaction for AML compliance:
+        const sanctionsContext = transaction._sanctionsFlag
+            ? `
+## ⚠️ SANCTIONS ALERT
+This transaction involves a KNOWN SANCTIONED ADDRESS.
+- The recipient address (${transaction.to || 'unknown'}) matches an entry on the OFAC (Office of Foreign Assets Control) sanctions list.
+- Sanctions Detail: ${transaction._sanctionsDetail || 'Listed on OFAC SDN sanctions list'}
+- The transaction MUST be blocked per compliance policy.
+- Explain WHY this is significant, what OFAC sanctions mean, and why compliance with sanctions regulations is important.
+`
+            : '';
+
+        return `Analyze this Stellar transaction for AML compliance:
 
 ## Current Transaction
 - From: ${transaction.from || 'unknown'}
 - To: ${transaction.to || 'unknown'}
-- Amount: ${transaction.amount} USDC
+- Amount: ${transaction.amount}${transaction.asset ? ' ' + transaction.asset : ''}
 - Timestamp: ${transaction.timestamp || Date.now()}
-- Asset: USDC (Stellar)
-
+- Asset: ${transaction.asset || 'USDC'} (Stellar)${sanctionsContext}
 ## User Transaction History (Last 90 days)
 ${JSON.stringify(userHistory.slice(0, 20), null, 2)}
 
@@ -132,6 +142,7 @@ ${JSON.stringify(userHistory.slice(0, 20), null, 2)}
 2. Velocity Check: Are there rapid successive transactions?
 3. Pattern Analysis: Does this deviate from user's normal behavior?
 4. Threshold Check: Is amount ≥ $10,000 (FINRA reporting threshold)?
+5. Sanctions Check: If a sanctions alert is present, explain the significance.
 
 Return JSON only.`;
     }

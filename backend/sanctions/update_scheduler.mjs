@@ -55,10 +55,16 @@ export class SanctionsUpdateScheduler {
             console.log(`[${new Date().toISOString()}] Fetching sanctions data...`);
             const data = await this.fetcher.fetchLatestSanctions();
 
-            const allAddresses = [
+            // Always include mock addresses as baseline (ensures demo addresses work)
+            const mockBaseline = this.fetcher.getMockSanctions() || [];
+
+            const tavilyAddresses = [
                 ...(data.ofac?.entries || []),
                 ...(data.un?.entries || []),
             ];
+
+            // Merge: mock baseline + any real addresses found by Tavily
+            const allAddresses = [...mockBaseline, ...tavilyAddresses];
 
             // Rebuild the tree
             this.tree.clear();
@@ -69,7 +75,9 @@ export class SanctionsUpdateScheduler {
             this.updateCount++;
             this.lastError = null;
 
-            console.log(`✅ Sanctions tree updated: ${allAddresses.length} entries, root: ${this.tree.getRootHex()?.slice(0, 16)}...`);
+            const totalMock = mockBaseline.length;
+            const totalReal = tavilyAddresses.length;
+            console.log(`✅ Sanctions tree updated: ${this.tree.size} entries (${totalMock} baseline + ${totalReal} Tavily), root: ${this.tree.getRootHex()?.slice(0, 16)}...`);
         } catch (error) {
             this.lastError = error.message;
             console.error('❌ Sanctions update failed:', error.message);

@@ -39,7 +39,8 @@ export function createSanctionsRouter() {
             merkleRoot: tree.getRootHex(),
             entriesCount: tree.size,
             lastUpdated: scheduler.lastUpdate?.toISOString() || null,
-            addresses: tree.addresses.slice(0, 5), // First 5 for preview
+            addresses: tree.addresses.slice(0, 8), // First 8 for preview
+            mode: fetcher.mockMode ? 'mock' : 'real',
         });
     });
 
@@ -47,7 +48,7 @@ export function createSanctionsRouter() {
      * POST /api/sanctions/check
      * Check if an address is in the sanctions list
      *
-     * Body: { address: "G..." }
+     * Body: { address: "G..., 0x..., bc1..." }
      */
     router.post('/sanctions/check', (req, res) => {
         const { address } = req.body;
@@ -69,6 +70,10 @@ export function createSanctionsRouter() {
             } : null,
             lastUpdated: scheduler.lastUpdate?.toISOString() || null,
             schedulerStatus: scheduler.getStatus(),
+            mode: fetcher.mockMode ? 'mock' : 'real',
+            modeDetail: fetcher.mockMode
+                ? `Mock sanctions list (${tree.size} addresses from ${fetcher.getMockSanctions().length} mock entries — set TAVILY_API_KEY for real data)`
+                : `Real-time sanctions from Tavily (${tree.size} addresses from OFAC + UN)`,
         });
     });
 

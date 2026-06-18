@@ -1,8 +1,9 @@
 # 🏔️ Alphine — Zero-Knowledge AML Compliance Layer for Stellar
 
-[![Stellar](https://img.shields.io/badge/Stellar-Testnet-00B4E6)](https://stellar.org)
+[![Stellar](https://img.shields.io/badge/Stellar-Testnet/Mainnet-00B4E6)](https://stellar.org)
 [![Noir](https://img.shields.io/badge/Noir-Circuits-FF6B6B)](https://noir-lang.org)
 [![Groq](https://img.shields.io/badge/Groq-AI-00C853)](https://groq.com)
+[![Tavily](https://img.shields.io/badge/Tavily-Oracle-FF6B35)](https://tavily.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 [![Hackathon](https://img.shields.io/badge/DoraHacks-Stellar_Hacks_Real_World_ZK-8A2BE2)](https://dorahacks.io/hackathon/stellar-hacks-zk/detail)
 
@@ -61,6 +62,9 @@ Regulators get cryptographic proof. Users keep their data private. Both sides wi
 ┌─────────────────────────────────────────────────────────────┐
 │                         USER                                │
 │              (Freighter Wallet / React dApp)                 │
+│  • NetworkSwitcher — Testnet ↔ Mainnet toggle               │
+│  • AssetSelector — XLM ↔ USDC with auto-balance fetch       │
+│  • TransactionDashboard — Send form + compliance flow       │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
@@ -69,6 +73,8 @@ Regulators get cryptographic proof. Users keep their data private. Both sides wi
 │  • Transaction pattern analysis via Llama 3.3 70B           │
 │  • Structuring detection over 90-day history                │
 │  • Risk scoring (0–100) + recommendation                    │
+│  • **Sanctions-context analysis**: Groq explains WHY        │
+│    a sanctioned address is flagged                          │
 │  • 5-minute cached results for rate limit management        │
 │  → Output: structured compliance report                     │
 └──────────────────────┬──────────────────────────────────────┘
@@ -76,9 +82,10 @@ Regulators get cryptographic proof. Users keep their data private. Both sides wi
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │               TAVILY SANCTIONS ORACLE (Phase 6)              │
-│  • Real-time OFAC SDN list fetching                         │
-│  • UN sanctions consolidated list                           │
-│  • Regulatory news monitoring                               │
+│  • **Hybrid mode**: 21 OFAC baseline addresses + Tavily     │
+│    real-time fetching                                       │
+│  • Real-time OFAC SDN list fetching via Tavily Search       │
+│  • ETH (0x...) and Stellar (G...) address support           │
 │  • 30-minute auto-update scheduler                          │
 │  • SHA-256 Merkle tree with proof generation                │
 │  → Output: Merkle root + inclusion proof                    │
@@ -109,14 +116,15 @@ Regulators get cryptographic proof. Users keep their data private. Both sides wi
 ### Data Flow (End-to-End)
 
 ```
-1. User connects Freighter wallet
-2. Enter recipient + amount (e.g., $5,000 USDC)
-3. Backend checks sanctions via Tavily OFAC/UN API
-4. Groq AI analyzes transaction pattern for AML red flags
-5. If clean → Noir circuit generates ZK proof
-6. Proof submitted to Soroban Groth16 Verifier
-7. If valid → Alphine Payment executes USDC transfer
-8. Compliance report returned to user — no private data exposed
+1. User connects Freighter wallet (or enters Stellar address manually)
+2. Select asset (XLM/USDC) + network (Testnet/Mainnet)
+3. Enter recipient — supports Stellar G... address OR ETH 0x... address
+   → ETH address: sanctions check only (no Stellar transfer possible)
+4. Backend checks sanctions via hybrid baseline + Tavily real-time
+5. If sanctioned: Groq AI analyzes WHY, shows full compliance report
+6. If clean: Groq AI analyzes transaction pattern for AML red flags
+7. Stellar transaction built → signed via Freighter → submitted to Horizon
+8. Compliance report returned with Merkle root, risk score, and AI reasoning
 ```
 
 ---
@@ -126,10 +134,9 @@ Regulators get cryptographic proof. Users keep their data private. Both sides wi
 ### Prerequisites
 
 - WSL Ubuntu 22.04+, macOS, or Linux
-- Rust 1.84+ (`wasm32v1-none` target)
 - Node.js 20+ (npm)
-- Stellar CLI (`stellar` / `soroban-cli`)
-- Noir (nargo) — `curl -L https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash`
+- [Freighter Wallet](https://freighter.app) browser extension (for mainnet/testnet)
+- (Optional) Rust 1.84+ + Noir for ZK circuit compilation
 
 ### 1. Clone & Setup
 
@@ -137,14 +144,17 @@ Regulators get cryptographic proof. Users keep their data private. Both sides wi
 git clone https://github.com/jinggaworld/Alphine
 cd Alphine
 
-# Copy and configure environment variables
+# Copy and configure environment variables (root folder)
 cp .env.example .env
-# Required: fill in GROQ_API_KEY (Groq AI) and TAVILY_API_KEY (Tavily Search)
-# Optional: generate Stellar keys with `stellar keys generate alice --network testnet`
+# Required: fill in GROQ_API_KEY (Groq AI — https://console.groq.com)
+# Required: fill in TAVILY_API_KEY (Tavily Search — https://app.tavily.com)
 
-# Frontend env (for local development)
+# Frontend env (for local development — optional, defaults to localhost:3001)
 cp frontend/.env.example frontend/.env
 ```
+
+> **Note:** Backend auto-loads `.env` from the project root (parent of `backend/`).
+> The `dotenv.config({ path: ... })` resolves to `../.env` from the backend directory.
 
 ### 2. Backend
 
@@ -153,6 +163,7 @@ cd backend
 npm install
 npm start
 # → http://localhost:3001/api/health
+# → Check API key status at /api/health (Groq + Tavily should show ✅)
 ```
 
 ### 3. Frontend
@@ -164,14 +175,23 @@ npm run dev
 # → http://localhost:5173
 ```
 
-### 4. Compile Noir Circuit
+### 4. Open in Browser
+
+Navigate to http://localhost:5173:
+1. Connect Freighter (or enter a Stellar address manually)
+2. Switch network (Testnet/Mainnet) via the header dropdown
+3. Select asset (XLM/USDC)
+4. Enter recipient + amount
+5. Watch the compliance pipeline run step-by-step
+
+### 5. (Optional) Compile Noir Circuit
 
 ```bash
 cd circuits/alphine_compliance
 nargo compile
 ```
 
-### 5. Run Smart Contract Tests
+### 6. (Optional) Run Smart Contract Tests
 
 ```bash
 cd contracts/alphine_core
@@ -189,13 +209,16 @@ cargo test
 | **Proving System** | Groth16 (BN254) | Efficient on-chain verification |
 | **Blockchain** | [Stellar Soroban](https://stellar.org) | Smart contract platform (Protocol 25) |
 | **Contracts** | Rust + soroban-sdk | 3 contracts: verifier, core, payment |
-| **AI / LLM** | [Groq](https://groq.com) Llama 3.3 70B | Compliance pattern analysis |
+| **AI / LLM** | [Groq](https://groq.com) Llama 3.3 70B | Compliance pattern + sanctions analysis |
 | **Data Oracle** | [Tavily](https://tavily.com) | Real-time OFAC/UN sanctions fetching |
 | **Frontend** | React 18 + Vite + Tailwind | User dashboard (Google Material Design) |
-| **Backend** | Node.js + Express | API orchestration (5 route groups) |
-| **Wallet** | Freighter | Stellar wallet connection |
+| **Backend** | Node.js + Express | API orchestration with Groq + Tavily |
+| **Wallet** | Freighter | Stellar wallet connection + signing |
+| **Networks** | Testnet / Mainnet | Toggle via NetworkSwitcher component |
+| **Assets** | XLM (native) / USDC (Circle) | Auto-balance fetch from Horizon |
 | **Animation** | Framer Motion | Step-by-step compliance flow |
 | **Icons** | Lucide React | Clean, consistent icon set |
+| **HTTP** | Axios | API communication + Horizon queries |
 
 ---
 
@@ -220,6 +243,9 @@ cargo test
 | `GET` | `/api/sanctions/status` | Scheduler and tree status |
 | `POST` | `/api/sanctions/refresh` | Force refresh sanctions data |
 | `GET` | `/api/sanctions/init` | Get initial sanctions list |
+
+All sanctions endpoints return `mode` (`'mock'` / `'real'`) and `modeDetail` fields.
+In hybrid mode, the tree includes both the 21-address mock baseline AND real-time Tavily results.
 
 ### Phase 9 — ZK Proof
 
@@ -324,14 +350,28 @@ alphine/
 | **Alphine Payment** | 7 | ✅ All pass (7/7) |
 | **Total Rust** | **22** | ✅ **100% pass** |
 | **Noir Circuit** | `nargo compile` | ✅ Zero errors |
-| **Frontend TypeScript** | `tsc --noEmit` | ✅ Zero errors |
-| **Frontend Build** | `vite build` | ✅ 328 KB gzipped |
+| **Frontend TypeScript** | `tsc --noEmit` | ✅ Zero errors (strict mode) |
+| **Frontend Build** | `vite build` | ✅ Production build (~1.3MB) |
+| **Backend** | Node.js + Express | ✅ 12 endpoints, all functional |
+| **Sanctions** | Hybrid (baseline + Tavily) | ✅ 25 entries, GARANTEX detected |
+| **ETH Address Flow** | Sanctions check only | ✅ Early return, no Stellar TX build
 
 ---
 
-## Demo Video
+## Features
 
-> *Coming soon — A 3-minute walkthrough of the Alphine compliance pipeline*
+| Feature | Description |
+|---------|-------------|
+| **🔀 Network Switcher** | Toggle between Testnet and Mainnet with live Horizon connectivity check |
+| **💱 Asset Selector** | XLM (native) ↔ USDC (Circle) with auto-balance fetch from Horizon |
+| **🔍 ETH Address Check** | Enter ETH `0x...` addresses for sanctions check — no Stellar transaction attempted |
+| **🤖 Groq AI Analysis** | Real-time AML analysis via Llama 3.3 70B — including sanctions-context reasoning |
+| **🛡️ Hybrid Sanctions** | 21 OFAC baseline addresses merged with Tavily real-time search results (25+ entries) |
+| **📜 Transaction Log** | Step-by-step log with timing, status codes, and response previews |
+| **📊 Compliance Report** | Risk score meter, red flags, AI reasoning, sanctions mode badge, Merkle root |
+| **📱 Mobile Responsive** | Full responsive design with compact NetworkSwitcher and adaptive layouts |
+| **🔐 Real Signing** | Freighter `signTransaction()` — real mainnet/testnet signing |
+| **✅ TypeScript** | Full TypeScript frontend with strict mode — zero errors |
 
 ---
 
